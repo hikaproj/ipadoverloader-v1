@@ -1,0 +1,7 @@
+127.0.0.1 - - [27/Oct/2026 06:26:16] "GET /benchmark.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Oct/2026 06:26:56] "GET /benchmark.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Oct/2026 06:27:27] "GET /benchmark.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Oct/2026 06:28:08] "GET /benchmark.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Oct/2026 06:28:36] "GET /benchmark.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Oct/2026 06:29:08] "GET /benchmark.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Oct/2026 06:29:26] "GET /benchmark.html HTTP/1.1" 200 -

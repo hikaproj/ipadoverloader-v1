@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Benchmark Tool</title>
+<style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #f0f0f0; }
+    h1 { color: #fff; }
+    .panel { background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+    button { padding: 12px 24px; font-size: 1.1em; cursor: pointer; background: #0a84ff; color: white; border: none; border-radius: 6px; font-weight: bold; transition: background 0.2s; }
+    button:hover { background: #0070e0; }
+    button:disabled { background: #555; cursor: not-allowed; }
+    #results { font-size: 1.2em; }
+    .score { font-weight: bold; color: #32d74b; }
+    canvas { width: 100%; height: 400px; background: #000; border-radius: 8px; margin-top: 10px; }
+    .controls { margin-top: 15px; display: flex; gap: 10px; }
+</style>
+</head>
+<body>
+
+<h1>ブラウザ パフォーマンス ベンチマーク</h1>
+<p>CPUとGPUの処理能力を測定するための高負荷ベンチマークツールです。</p>
+
+<div class="panel">
+    <div class="controls">
+        <button id="startBtn">ベンチマーク開始</button>
+        <button id="stopBtn" disabled>停止</button>
+    </div>
+
+    <div id="results">
+        <p>CPU スコア: <span id="cpuScore" class="score">未実行</span></p>
+        <p>GPU スコア (平均 FPS): <span id="gpuScore" class="score">未実行</span></p>
+    </div>
+</div>
+
+<div class="panel">
+    <h3>GPU レンダリングプレビュー</h3>
+    <canvas id="glcanvas"></canvas>
+</div>
+
+<script>
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const cpuScoreEl = document.getElementById('cpuScore');
+    const gpuScoreEl = document.getElementById('gpuScore');
+    const canvas = document.getElementById('glcanvas');
+
+    // WebGLコンテキストの取得 (iOS/Safari向けにexperimental-webglもフォールバックとして用意)
+    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+    let isRunning = false;
+    let shouldStop = false;
+    let workers = [];
+
+    // --- CPU ベンチマーク (Web Workerを使用してマルチコアをテスト) ---
+    function runCPUBenchmark(durationMs = 5000) {
+        return new Promise((resolve) => {
+            cpuScoreEl.textContent = 'CPUテスト実行中...';
+
+            const hardwareConcurrency = navigator.hardwareConcurrency || 4;
+            let completedWorkers = 0;
+            let totalOps = 0;
+
+            // Workerのコード (素数計算や行列演算などの重い処理)
+            const workerCode = `
+                self.onmessage = function(e) {
+                    const duration = e.data.duration;
+                    const start = performance.now();
+                    let ops = 0;
+
+                    // 重い行列演算のシミュレーション
+                    const N = 100;
+                    const A = new Float32Array(N * N).fill(1.5);
+                    const B = new Float32Array(N * N).fill(2.5);
+                    const C = new Float32Array(N * N);
+
+                    while (performance.now() - start < duration) {
+                        for (let i = 0; i < N; i++) {
+                            for (let j = 0; j < N; j++) {
+                                let sum = 0;
+                                for (let k = 0; k < N; k++) {
+                                    sum += A[i * N + k] * B[k * N + j];
+                                }
+                                C[i * N + j] = sum;
+                            }
+                        }
+                        ops++;
+                    }
+                    self.postMessage({ ops: ops });
+                };
+            `;
+
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+
+            for (let i = 0; i < hardwareConcurrency; i++) {
+                const worker = new Worker(workerUrl);
+                workers.push(worker);
+
+                worker.onmessage = (e) => {
+                    totalOps += e.data.ops;
+                    completedWorkers++;
+                    if (completedWorkers === hardwareConcurrency) {
+                        URL.revokeObjectURL(workerUrl);
+                        workers = [];
+                        // 1秒あたりの演算回数をスコアとする (概算)
+                        const score = Math.round((totalOps * 1000000) / durationMs);
+                        resolve(score);
+                    }
+                };
+
+                worker.postMessage({ duration: durationMs });
+            }
+        });
+    }
+
+    // --- GPU ベンチマーク (WebGLでの大量のポリゴン描画) ---
+    function runGPUBenchmark(durationMs = 5000) {
+        return new Promise((resolve) => {
+            if (!gl) {
+                resolve('WebGL非対応');
+                return;
+            }
+
+            gpuScoreEl.textContent = 'GPUテスト実行中...';
+
+            // 高解像度ディスプレイ（Retinaなど）に対応
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = canvas.clientWidth * dpr;
+            canvas.height = canvas.clientHeight * dpr;
+
+            const vsSource = \`
+                attribute vec4 aVertexPosition;
+                uniform float uTime;
+                varying vec4 vColor;
+                void main() {
+                    // 各頂点を時間と位置に基づいて動かす
+                    float s = sin(uTime * 2.0 + aVertexPosition.x * 20.0);
+                    float c = cos(uTime * 2.0 + aVertexPosition.y * 20.0);
+
+                    mat4 rot = mat4(
+                        c, -s, 0.0, 0.0,
+                        s, c, 0.0, 0.0,
+                        0.0, 0.0, 1.0, 0.0,
+                        0.0, 0.0, 0.0, 1.0
+                    );
+
+                    // 画面全体に広がるようにスケーリング
+                    gl_Position = rot * aVertexPosition;
+                    // 時間による色の変化
+                    vColor = vec4(abs(s), abs(c), sin(uTime)*0.5+0.5, 1.0);
+                }
+            \`;
+
+            const fsSource = \`
+                precision mediump float;
+                varying vec4 vColor;
+                void main() {
+                    gl_FragColor = vColor;
+                }
+            \`;
+
+            function createShader(gl, type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    console.error('Shader compile failed', gl.getShaderInfoLog(shader));
+                    gl.deleteShader(shader);
+                    return null;
+                }
+                return shader;
+            }
+
+            const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+
+            gl.useProgram(program);
+
+            // 大量の三角形を生成 (GPUに負荷をかける)
+            const numTriangles = 200000;
+            const positions = new Float32Array(numTriangles * 9);
+            for (let i = 0; i < numTriangles * 9; i++) {
+                // -1.0 から 1.0 のランダムな位置
+                positions[i] = (Math.random() - 0.5) * 2.0;
+            }
+
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+            const positionAttributeLocation = gl.getAttribLocation(program, "aVertexPosition");
+            gl.enableVertexAttribArray(positionAttributeLocation);
+            gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
+
+            const timeLocation = gl.getUniformLocation(program, "uTime");
+
+            let frames = 0;
+            let testStartTime = performance.now();
+            let reqId;
+
+            function render(now) {
+                const elapsed = now - testStartTime;
+                if (elapsed > durationMs || shouldStop) {
+                    cancelAnimationFrame(reqId);
+                    // 背景をクリア
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT);
+
+                    const fps = Math.round((frames / (elapsed / 1000)));
+                    resolve(fps);
+                    return;
+                }
+
+                gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+                gl.clearColor(0.1, 0.1, 0.1, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                // 時間を渡してアニメーション
+                gl.uniform1f(timeLocation, now * 0.001);
+
+                // 描画コマンド
+                gl.drawArrays(gl.TRIANGLES, 0, numTriangles * 3);
+
+                frames++;
+                reqId = requestAnimationFrame(render);
+            }
+
+            reqId = requestAnimationFrame(render);
+        });
+    }
+
+    startBtn.addEventListener('click', async () => {
+        if (isRunning) return;
+        isRunning = true;
+        shouldStop = false;
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        cpuScoreEl.textContent = '準備中...';
+        gpuScoreEl.textContent = '待機中...';
+        cpuScoreEl.classList.remove('score');
+        gpuScoreEl.classList.remove('score');
+
+        try {
+            // テスト時間 (ミリ秒)
+            const testDuration = 6000;
+
+            // CPUテスト実行
+            if (!shouldStop) {
+                const cpuScore = await runCPUBenchmark(testDuration);
+                cpuScoreEl.textContent = cpuScore.toLocaleString() + ' ops/sec';
+                cpuScoreEl.classList.add('score');
+            }
+
+            // GPUテスト実行 (UIの更新を待つために少し遅延)
+            if (!shouldStop) {
+                await new Promise(r => setTimeout(r, 500));
+                const gpuScore = await runGPUBenchmark(testDuration);
+                gpuScoreEl.textContent = gpuScore + ' FPS (対象: 20万ポリゴン)';
+                gpuScoreEl.classList.add('score');
+            }
+
+        } catch (e) {
+            console.error('ベンチマーク中にエラーが発生しました:', e);
+            cpuScoreEl.textContent = 'エラー';
+            gpuScoreEl.textContent = 'エラー';
+        }
+
+        isRunning = false;
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+    });
+
+    stopBtn.addEventListener('click', () => {
+        shouldStop = true;
+        // 動作中のWorkerを強制終了
+        workers.forEach(w => w.terminate());
+        workers = [];
+
+        stopBtn.disabled = true;
+        startBtn.disabled = false;
+        isRunning = false;
+
+        if (cpuScoreEl.textContent === 'CPUテスト実行中...') {
+            cpuScoreEl.textContent = '中断されました';
+        }
+        if (gpuScoreEl.textContent === 'GPUテスト実行中...') {
+            gpuScoreEl.textContent = '中断されました';
+        }
+    });
+
+</script>
+</body>
+</html>
