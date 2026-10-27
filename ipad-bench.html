@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>究極のiPadパフォーマンステスト</title>
+<style>
+    :root {
+        --bg-color: #f4f5f7;
+        --card-bg: #ffffff;
+        --text-primary: #1d1d1f;
+        --text-secondary: #86868b;
+        --accent-color: #007aff;
+        --success-color: #34c759;
+        --warning-color: #ff9500;
+        --danger-color: #ff3b30;
+        --border-radius: 18px;
+        --spacing: 24px;
+        --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        margin: 0;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+        font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    .header {
+        text-align: center;
+        margin: 40px 0 20px;
+        width: 100%;
+        max-width: 800px;
+        padding: 0 var(--spacing);
+    }
+
+    .header h1 {
+        font-size: 32px;
+        font-weight: 800;
+        margin: 0 0 8px 0;
+        letter-spacing: 0.5px;
+    }
+
+    .header p {
+        color: var(--text-secondary);
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 800px;
+        padding: 0 var(--spacing);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing);
+        padding-bottom: 60px;
+    }
+
+    .total-score-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f0f0f5 100%);
+        border-radius: var(--border-radius);
+        padding: 30px;
+        text-align: center;
+        box-shadow: var(--shadow);
+        border: 1px solid rgba(0,0,0,0.05);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .total-score-card h2 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-secondary);
+    }
+
+    .total-score-value {
+        font-size: 64px;
+        font-weight: 800;
+        background: -webkit-linear-gradient(45deg, #007aff, #34c759);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+        flex-direction: column;
+    }
+
+    @media (min-width: 600px) {
+        .btn-group {
+            flex-direction: row;
+        }
+    }
+
+    .action-btn {
+        background-color: var(--accent-color);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        padding: 16px 24px;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        flex: 1;
+        transition: transform 0.1s, opacity 0.2s, background-color 0.2s;
+        box-shadow: 0 4px 10px rgba(0, 122, 255, 0.3);
+    }
+
+    .action-btn.danger {
+        background-color: var(--danger-color);
+        box-shadow: 0 4px 10px rgba(255, 59, 48, 0.3);
+    }
+
+    .action-btn:active {
+        transform: scale(0.97);
+    }
+
+    .action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: var(--spacing);
+    }
+
+    .category-card {
+        background-color: var(--card-bg);
+        border-radius: var(--border-radius);
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: var(--shadow);
+    }
+
+    .category-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .category-icon {
+        width: 44px;
+        height: 44px;
+        background-color: #f4f5f7;
+        border-radius: 12px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 16px;
+        font-size: 22px;
+    }
+
+    .category-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .test-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .test-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .test-name {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+
+    .test-score {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .running .test-score {
+        color: var(--accent-color);
+        animation: pulse 1s infinite alternate;
+    }
+
+    .completed .test-score {
+        color: var(--success-color);
+    }
+
+    @keyframes pulse {
+        from { opacity: 0.5; }
+        to { opacity: 1; }
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background-color: #e5e5ea;
+        border-radius: 4px;
+        margin-top: 25px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 0%;
+        background-color: var(--accent-color);
+        transition: width 0.3s ease;
+    }
+
+    /* 描画エリア */
+    .visual-area {
+        width: 100%;
+        height: 250px;
+        background: #000;
+        border-radius: 12px;
+        margin-top: 15px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    #sandbox {
+        width: 100%;
+        height: 250px;
+        margin-top: 15px;
+        border: 1px solid #e5e5ea;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        background: #fff;
+    }
+
+    .test-node {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.8;
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>究極のiPadパフォーマンステスト</h1>
+    <p>システム全体に極限の負荷をかけて性能を測定します</p>
+</div>
+
+<div class="container">
+    <div class="total-score-card">
+        <h2>総合スコア</h2>
+        <div class="total-score-value" id="totalScore">---</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="btn-group">
+            <button class="action-btn" id="startBtn">通常ベンチマーク開始</button>
+            <button class="action-btn danger" id="endlessBtn">無限高負荷モード開始</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- CPU Section -->
+        <div class="category-card" id="card-cpu">
+            <div class="category-header">
+                <div class="category-icon">⚙️</div>
+                <h3 class="category-title">CPU 処理能力</h3>
+            </div>
+            <div class="test-item" id="test-cpu-alu">
+                <div class="test-name">整数演算 (ALU)</div>
+                <div class="test-score">待機中</div>
+            </div>
+            <div class="test-item" id="test-cpu-fpu">
+                <div class="test-name">浮動小数点演算 (FPU)</div>
+                <div class="test-score">待機中</div>
+            </div>
+            <div class="test-item" id="test-cpu-multi">
+                <div class="test-name">マルチコア並列処理</div>
+                <div class="test-score">待機中</div>
+            </div>
+        </div>
+
+        <!-- Memory Section -->
+        <div class="category-card" id="card-memory">
+            <div class="category-header">
+                <div class="category-icon">🧠</div>
+                <h3 class="category-title">メモリサブシステム</h3>
+            </div>
+            <div class="test-item" id="test-mem-read">
+                <div class="test-name">シーケンシャルリード</div>
+                <div class="test-score">待機中</div>
+            </div>
+            <div class="test-item" id="test-mem-write">
+                <div class="test-name">シーケンシャルライト</div>
+                <div class="test-score">待機中</div>
+            </div>
+            <div class="test-item" id="test-mem-rand">
+                <div class="test-name">ランダムアクセス</div>
+                <div class="test-score">待機中</div>
+            </div>
+        </div>
+
+        <!-- Graphics Section 1 -->
+        <div class="category-card" id="card-graphics">
+            <div class="category-header">
+                <div class="category-icon">🎨</div>
+                <h3 class="category-title">グラフィックス (Canvas/WebGL)</h3>
+            </div>
+            <div class="test-item" id="test-gfx-canvas">
+                <div class="test-name">Canvas 2D 描画</div>
+                <div class="test-score">待機中</div>
+            </div>
+            <div class="test-item" id="test-gfx-webgl">
+                <div class="test-name">WebGL ジオメトリ描画</div>
+                <div class="test-score">待機中</div>
+            </div>
+            <div class="visual-area">
+                <div id="renderArea"></div>
+            </div>
+        </div>
+
+        <!-- Graphics Section 2 -->
+        <div class="category-card" id="card-dom">
+            <div class="category-header">
+                <div class="category-icon">📄</div>
+                <h3 class="category-title">DOM レンダリング</h3>
+            </div>
+            <div class="test-item" id="test-gfx-dom">
+                <div class="test-name">DOM ノード大量操作</div>
+                <div class="test-score">待機中</div>
+            </div>
+            <div id="sandbox"></div>
+        </div>
+
+        <!-- Storage Section -->
+        <div class="category-card" id="card-storage">
+            <div class="category-header">
+                <div class="category-icon">💾</div>
+                <h3 class="category-title">ストレージ (IndexedDB)</h3>
+            </div>
+            <div class="test-item" id="test-str-write">
+                <div class="test-name">データベース書込</div>
+                <div class="test-score">待機中</div>
+            </div>
+            <div class="test-item" id="test-str-read">
+                <div class="test-name">データベース読込</div>
+                <div class="test-score">待機中</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+const fmt = (num) => Math.round(num).toLocaleString();
+const updateUI = (id, status, scoreText) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'test-item ' + status;
+    el.querySelector('.test-score').textContent = scoreText;
+};
+const setProgress = (percent) => {
+    document.getElementById('progressBar').style.width = `${percent}%`;
+};
+
+// 負荷時間を増やす
+const TEST_DURATION = 3000;
+let isEndless = false;
+let endlessWorkers = [];
+let endlessAnimationFrame;
+
+// 汎用Workerコード (高負荷をかけ続ける)
+const endlessWorkerCode = `
+    self.onmessage = function(e) {
+        if(e.data === 'start') {
+            function loop() {
+                let v = 0;
+                // 重い計算
+                for(let i=0; i<1000000; i++) {
+                    v += Math.sin(i) * Math.cos(i) + Math.sqrt(i);
+                }
+                setTimeout(loop, 0); // ノンブロッキングで継続
+            }
+            loop();
+        }
+    }
+`;
+
+// --- Test Implementations ---
+
+async function testCpuAlu() {
+    return new Promise(resolve => {
+        let score = 0;
+        const start = performance.now();
+        while (performance.now() - start < TEST_DURATION) {
+            let a = 0;
+            for (let i = 0; i < 100000; i++) {
+                a = (a + i) ^ (i & 0xFF);
+                a = (a << 1) | (a >>> 31);
+            }
+            score++;
+        }
+        resolve(score * 1234);
+    });
+}
+
+async function testCpuFpu() {
+    return new Promise(resolve => {
+        let score = 0;
+        const start = performance.now();
+        while (performance.now() - start < TEST_DURATION) {
+            let a = 1.1;
+            for (let i = 1; i < 50000; i++) {
+                a = Math.sin(a) * Math.cos(a) + Math.tan(a) * Math.sqrt(i);
+            }
+            score++;
+        }
+        resolve(score * 4567);
+    });
+}
+
+async function testCpuMulti() {
+    return new Promise(resolve => {
+        const concurrency = navigator.hardwareConcurrency || 4;
+        let completed = 0;
+        let totalScore = 0;
+
+        const workerCode = `
+            self.onmessage = function(e) {
+                const duration = e.data;
+                let score = 0;
+                const start = performance.now();
+                while (performance.now() - start < duration) {
+                    let v = 0;
+                    for(let i=0; i<20000; i++) {
+                        v += Math.random() * Math.random();
+                    }
+                    score++;
+                }
+                self.postMessage(score);
+            }
+        `;
+        const blob = new Blob([workerCode], {type: 'application/javascript'});
+        const url = URL.createObjectURL(blob);
+
+        for (let i = 0; i < concurrency; i++) {
+            const worker = new Worker(url);
+            worker.onmessage = (e) => {
+                totalScore += e.data;
+                completed++;
+                worker.terminate();
+                if (completed === concurrency) {
+                    URL.revokeObjectURL(url);
+                    resolve(totalScore * 890);
+                }
+            };
+            worker.postMessage(TEST_DURATION);
+        }
+    });
+}
+
+async function testMemRead() {
+    return new Promise(resolve => {
+        const size = 20 * 1024 * 1024;
+        const arr = new Int32Array(size);
+        for(let i=0; i<size; i++) arr[i] = i;
+
+        let score = 0;
+        const start = performance.now();
+        while (performance.now() - start < TEST_DURATION) {
+            let sum = 0;
+            for(let i=0; i<size; i+=16) sum += arr[i];
+            score++;
+        }
+        resolve(score * 1024);
+    });
+}
+
+async function testMemWrite() {
+    return new Promise(resolve => {
+        const size = 20 * 1024 * 1024;
+        const arr = new Int32Array(size);
+
+        let score = 0;
+        const start = performance.now();
+        while (performance.now() - start < TEST_DURATION) {
+            for(let i=0; i<size; i+=16) arr[i] = score;
+            score++;
+        }
+        resolve(score * 950);
+    });
+}
+
+async function testMemRand() {
+    return new Promise(resolve => {
+        const size = 10 * 1024 * 1024;
+        const arr = new Int32Array(size);
+        const indices = new Int32Array(200000);
+        for(let i=0; i<200000; i++) indices[i] = Math.floor(Math.random() * size);
+
+        let score = 0;
+        const start = performance.now();
+        while (performance.now() - start < TEST_DURATION) {
+            for(let i=0; i<200000; i++) {
+                arr[indices[i]] = arr[indices[199999-i]] + 1;
+            }
+            score++;
+        }
+        resolve(score * 400);
+    });
+}
+
+// 実際の画面に描画する
+async function testGfxCanvas() {
+    return new Promise(resolve => {
+
+        const area = document.getElementById('renderArea');
+        area.innerHTML = ''; // Clear previous
+        const canvas = document.createElement('canvas');
+        area.appendChild(canvas);
+        const w = area.clientWidth, h = area.clientHeight;
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = w; canvas.height = h;
+
+        let frames = 0;
+        const start = performance.now();
+
+        function render() {
+            if (!isEndless && performance.now() - start >= TEST_DURATION) {
+                resolve(frames * 50);
+                return;
+            }
+
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fillRect(0,0,w,h);
+
+            // 大量のパーティクルを描画
+            for(let i=0; i<2000; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random()*w, Math.random()*h, Math.random()*10, 0, Math.PI*2);
+                ctx.fillStyle = `hsl(${Math.random()*360}, 100%, 50%)`;
+                ctx.fill();
+            }
+
+            frames++;
+            if(isEndless) {
+                endlessAnimationFrame = requestAnimationFrame(render);
+            } else {
+                requestAnimationFrame(render);
+            }
+        }
+        render();
+    });
+}
+
+async function testGfxWebgl() {
+    return new Promise(resolve => {
+
+        const area = document.getElementById('renderArea');
+        area.innerHTML = ''; // Clear previous
+        const canvas = document.createElement('canvas');
+        area.appendChild(canvas);
+        const w = area.clientWidth, h = area.clientHeight;
+
+        canvas.width = w; canvas.height = h;
+
+        // WebGLコンテキストを初期化（前のCanvas 2Dを上書き）
+        const gl = canvas.getContext('webgl');
+        if (!gl) return resolve(0);
+
+        const vs = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vs, `
+            attribute vec2 p;
+            uniform float t;
+            varying vec3 vCol;
+            void main(){
+                vec2 pos = p;
+                pos.x += sin(t + p.y*10.0)*0.1;
+                pos.y += cos(t + p.x*10.0)*0.1;
+                gl_Position=vec4(pos,0.0,1.0);
+                vCol = vec3(sin(t)*0.5+0.5, cos(t+p.x)*0.5+0.5, sin(t+p.y)*0.5+0.5);
+            }`);
+        gl.compileShader(vs);
+
+        const fs = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fs, 'precision mediump float; varying vec3 vCol; void main(){ gl_FragColor=vec4(vCol, 1.0); }');
+        gl.compileShader(fs);
+
+        const prog = gl.createProgram();
+        gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+        gl.linkProgram(prog); gl.useProgram(prog);
+
+        // ポリゴン数激増
+        const count = 300000;
+        const data = new Float32Array(count * 6);
+        for(let i=0; i<data.length; i++) data[i] = Math.random()*2-1;
+
+        const buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+
+        const loc = gl.getAttribLocation(prog, 'p');
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+        const tLoc = gl.getUniformLocation(prog, 't');
+
+        let frames = 0;
+        const start = performance.now();
+
+        function render(now) {
+            if (!isEndless && performance.now() - start >= TEST_DURATION) {
+                resolve(frames * 80);
+                return;
+            }
+            gl.viewport(0, 0, w, h);
+            gl.clearColor(0,0,0,1);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+            gl.uniform1f(tLoc, now * 0.005);
+            gl.drawArrays(gl.TRIANGLES, 0, count * 3);
+
+            frames++;
+            if(isEndless) {
+                endlessAnimationFrame = requestAnimationFrame(render);
+            } else {
+                requestAnimationFrame(render);
+            }
+        }
+        requestAnimationFrame(render);
+    });
+}
+
+async function testGfxDom() {
+    return new Promise(resolve => {
+        const sb = document.getElementById('sandbox');
+        const w = sb.clientWidth;
+        const h = sb.clientHeight;
+
+        let frames = 0;
+        const start = performance.now();
+
+        function step() {
+            if (!isEndless && performance.now() - start >= TEST_DURATION) {
+                sb.innerHTML = ''; // cleanup
+                resolve(frames * 10);
+                return;
+            }
+
+            // 毎回DOMを全消去して再構築する（非常に重い処理）
+            sb.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            for(let i=0; i<800; i++) {
+                const el = document.createElement('div');
+                el.className = 'test-node';
+                el.style.width = (Math.random() * 30 + 10) + 'px';
+                el.style.height = el.style.width;
+                el.style.left = Math.random() * (w - 40) + 'px';
+                el.style.top = Math.random() * (h - 40) + 'px';
+                el.style.backgroundColor = `hsl(${Math.random()*360}, 100%, 50%)`;
+                frag.appendChild(el);
+            }
+            sb.appendChild(frag);
+
+            frames++;
+
+            if(isEndless) {
+                setTimeout(step, 16); // ~60fps
+            } else {
+                setTimeout(step, 0); // 可能な限り最速
+            }
+        }
+        step();
+    });
+}
+
+async function testStrWrite() {
+    return new Promise((resolve) => {
+        const req = indexedDB.open('BenchDB', 2);
+        let db;
+        req.onupgradeneeded = e => {
+            db = e.target.result;
+            if(!db.objectStoreNames.contains('store')) {
+                db.createObjectStore('store', {keyPath: 'id'});
+            }
+        };
+        req.onsuccess = async e => {
+            db = e.target.result;
+
+            await new Promise(r => {
+                const tx = db.transaction('store', 'readwrite');
+                tx.objectStore('store').clear().onsuccess = r;
+            });
+
+            let score = 0;
+            const start = performance.now();
+            const payload = 'A'.repeat(1024 * 500); // 500kb per record
+
+            async function writeLoop() {
+                while(performance.now() - start < TEST_DURATION) {
+                    await new Promise(r => {
+                        const tx = db.transaction('store', 'readwrite');
+                        tx.objectStore('store').put({id: score, data: payload});
+                        tx.oncomplete = r;
+                    });
+                    score++;
+                }
+                resolve(score * 1500);
+            }
+            writeLoop();
+        };
+        req.onerror = () => resolve(0);
+    });
+}
+
+async function testStrRead() {
+    return new Promise((resolve) => {
+        const req = indexedDB.open('BenchDB', 2);
+        req.onsuccess = async e => {
+            const db = e.target.result;
+            let score = 0;
+            const start = performance.now();
+
+            async function readLoop() {
+                while(performance.now() - start < TEST_DURATION) {
+                    await new Promise(r => {
+                        const tx = db.transaction('store', 'readonly');
+                        const id = Math.floor(Math.random() * 10);
+                        const getReq = tx.objectStore('store').get(id);
+                        getReq.onsuccess = r;
+                        getReq.onerror = r;
+                    });
+                    score++;
+                }
+                resolve(score * 800);
+            }
+            readLoop();
+        };
+        req.onerror = () => resolve(0);
+    });
+}
+
+
+const tests = [
+    { id: 'test-cpu-alu', fn: testCpuAlu },
+    { id: 'test-cpu-fpu', fn: testCpuFpu },
+    { id: 'test-cpu-multi', fn: testCpuMulti },
+    { id: 'test-mem-read', fn: testMemRead },
+    { id: 'test-mem-write', fn: testMemWrite },
+    { id: 'test-mem-rand', fn: testMemRand },
+    { id: 'test-gfx-canvas', fn: testGfxCanvas },
+    { id: 'test-gfx-webgl', fn: testGfxWebgl },
+    { id: 'test-gfx-dom', fn: testGfxDom },
+    { id: 'test-str-write', fn: testStrWrite },
+    { id: 'test-str-read', fn: testStrRead },
+];
+
+async function runBenchmark(endless = false) {
+    const startBtn = document.getElementById('startBtn');
+    const endlessBtn = document.getElementById('endlessBtn');
+
+    if(isEndless && !endless) return; // Ignore normal start if endless is running
+
+    if(isEndless && endless) {
+        // Stop endless mode
+        isEndless = false;
+        endlessWorkers.forEach(w => w.terminate());
+        endlessWorkers = [];
+        cancelAnimationFrame(endlessAnimationFrame);
+        document.getElementById('sandbox').innerHTML = '';
+
+        startBtn.disabled = false;
+        endlessBtn.textContent = '無限高負荷モード開始';
+        endlessBtn.classList.remove('running');
+        document.getElementById('totalScore').textContent = '停止しました';
+        tests.forEach(t => updateUI(t.id, '', '停止'));
+        return;
+    }
+
+    isEndless = endless;
+
+    startBtn.disabled = true;
+    endlessBtn.disabled = !endless;
+
+    if(endless) {
+        endlessBtn.textContent = '無限モード停止';
+        document.getElementById('totalScore').textContent = '無限負荷実行中...';
+        tests.forEach(t => updateUI(t.id, 'running', '裏で実行中...'));
+
+        // Web Workersを全コア起動してバックグラウンド負荷をかける
+        const concurrency = navigator.hardwareConcurrency || 4;
+        const blob = new Blob([endlessWorkerCode], {type: 'application/javascript'});
+        const url = URL.createObjectURL(blob);
+        for(let i=0; i<concurrency; i++) {
+            const w = new Worker(url);
+            w.postMessage('start');
+            endlessWorkers.push(w);
+        }
+
+        // 描画系の無限ループ開始
+        testGfxWebgl();
+        testGfxDom();
+
+    } else {
+        startBtn.textContent = '実行中...';
+        document.getElementById('totalScore').textContent = '---';
+        setProgress(0);
+        tests.forEach(t => updateUI(t.id, '', '待機中'));
+
+        let total = 0;
+        for (let i = 0; i < tests.length; i++) {
+            if(isEndless) break; // Should not happen but just in case
+
+            const t = tests[i];
+            document.getElementById(t.id).scrollIntoView({behavior: 'smooth', block: 'center'});
+            updateUI(t.id, 'running', 'テスト中...');
+
+            await new Promise(r => setTimeout(r, 100));
+
+            try {
+                const score = await t.fn();
+                total += score;
+                updateUI(t.id, 'completed', fmt(score));
+            } catch(e) {
+                console.error(e);
+                updateUI(t.id, 'completed', 'エラー');
+            }
+
+            setProgress(((i + 1) / tests.length) * 100);
+        }
+
+        if(!isEndless) {
+            window.scrollTo({top: 0, behavior: 'smooth'});
+            document.getElementById('totalScore').textContent = fmt(total);
+            startBtn.textContent = 'もう一度実行';
+            startBtn.disabled = false;
+            endlessBtn.disabled = false;
+        }
+    }
+}
+
+document.getElementById('startBtn').addEventListener('click', () => runBenchmark(false));
+document.getElementById('endlessBtn').addEventListener('click', () => runBenchmark(true));
+
+</script>
+</body>
+</html>
